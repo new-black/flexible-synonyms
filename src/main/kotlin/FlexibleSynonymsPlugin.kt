@@ -97,8 +97,6 @@ class FlexibleSynonymWatcher(
     }
 
     override fun doStart() {
-        logger.info("doStart() called for FlexibleSynonymWatcher")
-
         schedule = scheduler.scheduleAtFixedRate({
             logger.info("updating resources..")
             filters.forEach { it ->
@@ -115,13 +113,9 @@ class FlexibleSynonymWatcher(
     }
 
     override fun doStop() {
-        logger.info("doStop() called for FlexibleSynonymWatcher")
-
         schedule?.cancel(false)
     }
 
-    override fun doClose() {
-        logger.info("doClose() called for FlexibleSynonymWatcher")
-    }
+    override fun doClose() { }
 
 }

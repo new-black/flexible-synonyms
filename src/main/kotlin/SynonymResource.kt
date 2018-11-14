@@ -50,6 +50,9 @@ class WebSynonymResource(
     val logger = ESLoggerFactory.getLogger(WebSynonymResource::class.java)
 
     override fun load(): SynonymMap {
+        // TODO(kevin): check if resource needs to be reloaded by checking the last-modified headers
+        // (send if-modified-since headers etc and check for 304)
+
         logger.info("loading from remote location: {}", location)
 
         val parser = createParser(format, expand, analyzer)

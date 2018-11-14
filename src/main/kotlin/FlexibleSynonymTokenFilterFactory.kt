@@ -35,8 +35,17 @@ class FlexibleSynonymTokenFilterFactory(
 
         val format = SYNONYM_FORMAT.get(settings)
 
-        // TODO(kevin): let this be configurable based on settings
-        // TODO(kevin): grab an exisiting analyzer
+        val resource = createSynonymResource(uri, format)
+
+        val filter = DynamicSynonymFilter(tokenStream, resource.load())
+
+        synonymWatcher.watch(indexSettings.index, filter, resource)
+
+        return filter
+    }
+
+    private fun createSynonymResource(uri: String, format: String): SynonymResource {
+        // TODO(kevin): which analyzer should we pass to the synonym parser down the road?
         val analyzer = object : Analyzer() {
             override fun createComponents(fieldName: String?): TokenStreamComponents {
                 val tokenizer = WhitespaceTokenizer()
@@ -47,19 +56,13 @@ class FlexibleSynonymTokenFilterFactory(
         val resourceUri = URI(uri)
 
         // TODO(kevin): support for multiple types of resources
-        val resource = if (resourceUri.scheme.startsWith("http")) {
+        if (resourceUri.scheme.startsWith("http")) {
             logger.info("using WebSynonymResource for {}", uri)
-            WebSynonymResource(true, analyzer, format, uri)
-        } else {
-            logger.info("using LocalSynonymResource for {}", uri)
-            LocalSynonymResource(true, analyzer, format, uri)
+            return WebSynonymResource(true, analyzer, format, uri)
         }
 
-        val filter = DynamicSynonymFilter(tokenStream, resource.load())
-
-        synonymWatcher.watch(indexSettings.index, filter, resource)
-
-        return filter
+        logger.info("using LocalSynonymResource for {}", uri)
+        return LocalSynonymResource(true, analyzer, format, uri)
     }
 
 }
