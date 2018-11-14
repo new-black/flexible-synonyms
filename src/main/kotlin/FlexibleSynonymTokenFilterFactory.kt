@@ -57,7 +57,7 @@ class FlexibleSynonymTokenFilterFactory(
 
         val filter = DynamicSynonymFilter(tokenStream, resource.load())
 
-        synonymWatcher.watch(filter, resource)
+        synonymWatcher.watch(indexSettings.index, filter, resource)
 
         return filter
     }
