@@ -7,10 +7,7 @@ import org.apache.lucene.analysis.synonym.SynonymMap
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-class DynamicSynonymFilter(
-        input: TokenStream,
-        synonyms: SynonymMap
-) : TokenFilter(input) {
+class DynamicSynonymFilter(input: TokenStream, synonyms: SynonymMap) : TokenFilter(input) {
 
     private val lock: ReadWriteLock = ReentrantReadWriteLock()
 

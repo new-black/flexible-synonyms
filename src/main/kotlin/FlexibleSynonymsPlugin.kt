@@ -25,13 +25,9 @@ import java.util.concurrent.TimeUnit
 
 class FlexibleSynonymsPlugin : Plugin(), AnalysisPlugin {
 
-    val logger = ESLoggerFactory.getLogger(FlexibleSynonymsPlugin::class.java)
+    private val logger = ESLoggerFactory.getLogger(FlexibleSynonymsPlugin::class.java)
 
     private lateinit var watcher: FlexibleSynonymWatcher
-
-    init {
-        logger.info("plugin constructed")
-    }
 
     override fun onIndexModule(indexModule: IndexModule) {
         indexModule.addIndexEventListener(object : IndexEventListener {
@@ -62,15 +58,11 @@ class FlexibleSynonymsPlugin : Plugin(), AnalysisPlugin {
         return mutableListOf(watcher)
     }
 
-    override fun getTokenFilters(): MutableMap<String, AnalysisProvider<TokenFilterFactory>> {
-        logger.info("getTokenFilters invoked")
-
-        return mutableMapOf(
-                "flexible_synonym" to AnalysisProvider<TokenFilterFactory> {
-                    indexSettings, _, name, settings -> FlexibleSynonymTokenFilterFactory(indexSettings, name, settings, watcher)
-                }
+    override fun getTokenFilters() = mutableMapOf(
+        "flexible_synonym" to AnalysisProvider<TokenFilterFactory> {
+                indexSettings, _, name, settings -> FlexibleSynonymTokenFilterFactory(indexSettings, name, settings, watcher)
+            }
         )
-    }
 }
 
 class FlexibleSynonymWatcher(
@@ -81,10 +73,6 @@ class FlexibleSynonymWatcher(
     private val filters: MutableMap<String, MutableCollection<Pair<DynamicSynonymFilter, SynonymResource>>> = ConcurrentHashMap()
 
     private var schedule: ScheduledFuture<*>? = null
-
-    init {
-        logger.info("FlexibleSynonymWatcher initialized with settings: {}", settings)
-    }
 
     fun watch(index: Index, filter: DynamicSynonymFilter, resource: SynonymResource) {
         logger.info("start watching filter/resource for index {}", index.name)
@@ -98,18 +86,27 @@ class FlexibleSynonymWatcher(
 
     override fun doStart() {
         schedule = scheduler.scheduleAtFixedRate({
-            logger.info("updating resources..")
+            logger.info("updating resources of {} filters..", filters.count())
+
             filters.forEach { it ->
                 it.value.forEach {
-                    val m = it.second.load()
+                    logger.info("checking if reload is required..")
+                    if (it.second.needsReload()) {
+                        logger.info("reload is required")
 
-                    logger.info("loaded synonyms: {}, {}", m, m.fst)
+                        val m = it.second.load()
 
-                    it.first.update(m)
+                        logger.info("loaded synonyms: {}, {}", m, m.fst)
+
+                        it.first.update(m)
+                    } else {
+                        logger.info("reload is not required")
+                    }
                 }
             }
+
             logger.info("resources have been updated")
-        }, 30L, 30L, TimeUnit.SECONDS)
+        }, 15L, 15L, TimeUnit.SECONDS)
     }
 
     override fun doStop() {

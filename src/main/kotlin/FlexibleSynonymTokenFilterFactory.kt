@@ -18,8 +18,10 @@ class FlexibleSynonymTokenFilterFactory(
         private val synonymWatcher: FlexibleSynonymWatcher
 ) : AbstractTokenFilterFactory(indexSettings, name, settings) {
 
-    private val SYNONYM_URI = Setting.simpleString("synonyms_uri")
-    private val SYNONYM_FORMAT = Setting.simpleString("synonyms_format")
+    companion object {
+        private val SYNONYM_URI = Setting.simpleString("synonyms_uri")
+        private val SYNONYM_FORMAT = Setting.simpleString("synonyms_format")
+    }
 
     // Invoked the first x times and then the instances are cached by Elastic
     override fun create(tokenStream: TokenStream): TokenStream {
