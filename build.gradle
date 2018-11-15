@@ -22,11 +22,11 @@ repositories {
 
 configurations {
     localDeps
-    localDeps.transitive = false
 }
 
 dependencies {
-    localDeps group: "org.jetbrains.kotlin", name: "kotlin-stdlib", version: kotlin_version
+    localDeps group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: kotlin_version
+    localDeps group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.6'
 
     implementation configurations.localDeps
 
@@ -36,7 +36,7 @@ dependencies {
 
     testCompile "junit:junit:4.11"
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
-    testCompile "org.elasticsearch.test:elasticsearch:$elasticsearch_version"
+    testCompile "org.elasticsearch.test:framework:$elasticsearch_version"
 }
 
 task copyForDist(type: Copy) {
