@@ -3,42 +3,25 @@ package io.newblack.elastic
 import org.apache.http.HttpHeaders
 import org.apache.http.HttpStatus
 import org.apache.http.client.methods.HttpHead
-import org.apache.http.impl.client.HttpClients
+import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.synonym.SolrSynonymParser
 import org.apache.lucene.analysis.synonym.SynonymMap
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser
-import org.apache.lucene.util.CharsRef
 import org.elasticsearch.common.logging.ESLoggerFactory
 import java.net.URL
 
 interface SynonymResource {
     fun load(): SynonymMap
-    fun needsReload(): Boolean = false
-}
-
-class LocalSynonymResource(
-        private val expand: Boolean,
-        private val analyzer: Analyzer,
-        private val format: String,
-        private val location: String
-) : SynonymResource {
-
-    override fun load(): SynonymMap {
-        // TODO(kevin): implement this
-        return SynonymMap.Builder().apply {
-            add(CharsRef("med"), CharsRef("medicine"), true)
-            add(CharsRef("med"), CharsRef("medical"), true)
-        }.build()
-    }
-
+    fun needsReload(): Boolean
 }
 
 class WebSynonymResource(
         private val expand: Boolean,
         private val analyzer: Analyzer,
         private val format: String,
-        private val location: String
+        private val location: String,
+        private val createClient: () -> CloseableHttpClient
 ) : SynonymResource {
 
     private val logger = ESLoggerFactory.getLogger(WebSynonymResource::class.java)
@@ -48,15 +31,18 @@ class WebSynonymResource(
 
     override fun load(): SynonymMap {
         val parser = createParser(format, expand, analyzer)
+
+        logger.debug("loading from remote location {}", location)
+
         parser.parse(URL(location).openStream().reader())
 
-        logger.info("loaded from remote location")
+        logger.debug("loaded from remote location")
 
         return parser.build()
     }
 
     override fun needsReload(): Boolean {
-        logger.info("checking if reload is required for: {}", location)
+        logger.debug("checking if reload is required for: {}", location)
 
         val request = HttpHead(location)
                 .apply {
@@ -68,18 +54,22 @@ class WebSynonymResource(
                     }
                 }
 
-        val client = HttpClients.createDefault()
         var reloadRequired = false
 
-        client.execute(request).use {
-            logger.info("response status for HEAD: {}", it.statusLine)
+        createClient().use { client ->
+            client.execute(request).use {
+                logger.debug("response status for HEAD: {}", it.statusLine)
 
-            if (it.statusLine.statusCode == HttpStatus.SC_OK) {
-                // Update last modified and etag for next request
-                lastModified = it.getLastHeader(HttpHeaders.LAST_MODIFIED)?.value
-                eTags = it.getLastHeader(HttpHeaders.ETAG)?.value
+                if (it.statusLine.statusCode == HttpStatus.SC_OK) {
+                    // Update last modified and etag for next request
+                    lastModified = it.getLastHeader(HttpHeaders.LAST_MODIFIED)?.value
+                    eTags = it.getLastHeader(HttpHeaders.ETAG)?.value
 
-                reloadRequired = true
+                    logger.debug("updating last modified with: {}", lastModified)
+                    logger.debug("updating etag with: {}", eTags)
+
+                    reloadRequired = true
+                }
             }
         }
 
