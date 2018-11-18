@@ -1,4 +1,4 @@
-# Elasticsearch plugin
+# Elasticsearch plugin ![Travis](https://travis-ci.com/new-black/flexible-synonyms.svg?branch=master)
 
 ## For dynamically reloading synonyms
 
@@ -79,7 +79,3 @@ And you'll get a response with the synonyms:
 
 - `synonyms_uri` location of the resource to poll for the set of available synonyms.
 - `synonyms_format` format of the given resource, can be either solr or wordnet. Defaults to solr.
-
-## Build status
-
-![Travis](https://travis-ci.com/new-black/flexible-synonyms.svg?branch=master)
