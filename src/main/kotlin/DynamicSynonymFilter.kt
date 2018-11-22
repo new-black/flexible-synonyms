@@ -11,11 +11,21 @@ class DynamicSynonymFilter(input: TokenStream, synonyms: SynonymMap) : TokenFilt
 
     private val lock: ReadWriteLock = ReentrantReadWriteLock()
 
-    private var filter: SynonymGraphFilter = SynonymGraphFilter(input, synonyms, true)
+    private lateinit var filter: TokenFilter
+
+    init {
+        update(synonyms)
+    }
 
     fun update(synonyms: SynonymMap) {
         lock.writeLock().lock()
-        filter = SynonymGraphFilter(input, synonyms, true)
+
+        filter = if (synonyms.fst == null) {
+            NoopTokenFilter(input)
+        } else {
+            SynonymGraphFilter(input, synonyms, true)
+        }
+
         lock.writeLock().unlock()
     }
 
@@ -43,4 +53,8 @@ class DynamicSynonymFilter(input: TokenStream, synonyms: SynonymMap) : TokenFilt
         filter.end()
         lock.readLock().unlock()
     }
+}
+
+class NoopTokenFilter(input: TokenStream) : TokenFilter(input) {
+    override fun incrementToken() = false
 }

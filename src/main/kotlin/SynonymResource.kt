@@ -2,6 +2,7 @@ package io.newblack.elastic
 
 import org.apache.http.HttpHeaders
 import org.apache.http.HttpStatus
+import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.methods.HttpHead
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.lucene.analysis.Analyzer
@@ -24,21 +25,42 @@ class WebSynonymResource(
         private val createClient: () -> CloseableHttpClient
 ) : SynonymResource {
 
+    companion object {
+        private val EMPTY_SYNONYM_MAP = SynonymMap.Builder().build()
+    }
+
     private val logger = ESLoggerFactory.getLogger(WebSynonymResource::class.java)
 
     private var lastModified: String? = null
     private var eTags: String? = null
 
     override fun load(): SynonymMap {
-        val parser = createParser(format, expand, analyzer)
+        val request = HttpGet(location)
 
-        logger.debug("loading from remote location {}", location)
+        createClient().use { client ->
+            client.execute(request).use {
+                logger.debug("response status for GET: {}", it.statusLine)
 
-        parser.parse(URL(location).openStream().reader())
+                if (it.statusLine.statusCode == HttpStatus.SC_OK) {
+                    // Update last modified and etag for next request
+                    lastModified = it.getLastHeader(HttpHeaders.LAST_MODIFIED)?.value
+                    eTags = it.getLastHeader(HttpHeaders.ETAG)?.value
 
-        logger.debug("loaded from remote location")
+                    logger.debug("updating last modified with: {}", lastModified)
+                    logger.debug("updating etag with: {}", eTags)
 
-        return parser.build()
+                    if (it.entity.contentLength == 0L) {
+                        return EMPTY_SYNONYM_MAP
+                    }
+
+                    val parser = createParser(format, expand, analyzer)
+                    parser.parse(it.entity.content.reader())
+                    return parser.build()
+                }
+            }
+        }
+
+        return EMPTY_SYNONYM_MAP
     }
 
     override fun needsReload(): Boolean {
