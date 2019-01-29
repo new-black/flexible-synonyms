@@ -30,28 +30,19 @@ class DynamicSynonymFilter(input: TokenStream, synonyms: SynonymMap) : TokenFilt
     }
 
     override fun incrementToken(): Boolean {
-        lock.readLock().lock()
-        val success = filter.incrementToken()
-        lock.readLock().unlock()
-        return success
+        return filter.incrementToken()
     }
 
     override fun reset() {
-        lock.readLock().lock()
         filter.reset()
-        lock.readLock().unlock()
     }
 
     override fun close() {
-        lock.readLock().lock()
         filter.close()
-        lock.readLock().unlock()
     }
 
     override fun end() {
-        lock.readLock().lock()
         filter.end()
-        lock.readLock().unlock()
     }
 }
 
