@@ -1,9 +1,11 @@
 package io.newblack.elastic
-
 import org.elasticsearch.client.Client
 import org.elasticsearch.cluster.service.ClusterService
-import org.elasticsearch.common.logging.ESLoggerFactory
+import org.elasticsearch.common.io.stream.NamedWriteableRegistry
+import org.elasticsearch.common.logging.Loggers
 import org.elasticsearch.common.xcontent.NamedXContentRegistry
+import org.elasticsearch.env.Environment
+import org.elasticsearch.env.NodeEnvironment
 import org.elasticsearch.index.Index
 import org.elasticsearch.index.IndexModule
 import org.elasticsearch.index.IndexSettings
@@ -19,7 +21,7 @@ import org.elasticsearch.watcher.ResourceWatcherService
 
 class FlexibleSynonymsPlugin : Plugin(), AnalysisPlugin {
 
-    private val logger = ESLoggerFactory.getLogger(FlexibleSynonymsPlugin::class.java)
+    private val logger = Loggers.getLogger(FlexibleSynonymsPlugin::class.java, "eva")
 
     private lateinit var watcher: ScheduledSynonymWatcher
 
@@ -37,17 +39,14 @@ class FlexibleSynonymsPlugin : Plugin(), AnalysisPlugin {
         })
     }
 
-    override fun createComponents(
-            client: Client,
-            clusterService: ClusterService,
-            threadPool: ThreadPool,
-            resourceWatcherService: ResourceWatcherService,
-            scriptService: ScriptService,
-            xContentRegistry: NamedXContentRegistry
-    ): MutableCollection<Any> {
-        watcher = ScheduledSynonymWatcher(clusterService.settings, threadPool.scheduler())
+    override fun createComponents(client: Client?, clusterService: ClusterService?, threadPool: ThreadPool?, resourceWatcherService: ResourceWatcherService?, scriptService: ScriptService?, xContentRegistry: NamedXContentRegistry?, environment: Environment?, nodeEnvironment: NodeEnvironment?, namedWriteableRegistry: NamedWriteableRegistry?): MutableCollection<Any> {
 
-        return mutableListOf(watcher)
+        if (clusterService != null && threadPool != null) {
+            watcher = ScheduledSynonymWatcher(clusterService.settings, threadPool.scheduler())
+            return mutableListOf(watcher)
+        }
+
+        return mutableListOf()
     }
 
     override fun getTokenFilters() = mutableMapOf(

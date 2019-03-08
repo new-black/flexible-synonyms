@@ -1,6 +1,7 @@
 package io.newblack.elastic
 
 import org.elasticsearch.common.component.AbstractLifecycleComponent
+import org.elasticsearch.common.logging.Loggers
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.index.Index
 import java.util.concurrent.ConcurrentHashMap
@@ -19,6 +20,7 @@ class ScheduledSynonymWatcher(
         settings: Settings,
         private val scheduler: ScheduledExecutorService
 ) : AbstractLifecycleComponent(settings), SynonymWatcher {
+    private val logger = Loggers.getLogger(ScheduledSynonymWatcher::class.java, "eva")
 
     private val filters: MutableMap<String, MutableCollection<FilterWithResource>> = ConcurrentHashMap()
 
