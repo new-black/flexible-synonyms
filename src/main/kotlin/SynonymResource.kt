@@ -31,7 +31,7 @@ class WebSynonymResource(
         private val EMPTY_SYNONYM_MAP = SynonymMap.Builder().build()
     }
 
-    private val logger = Loggers.getLogger(WebSynonymResource::class.java, "eva")
+    private val logger = Loggers.getLogger(WebSynonymResource::class.java, "flexible-synonyms")
 
     private var lastModified: String? = null
     private var eTags: String? = null
