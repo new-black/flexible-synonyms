@@ -21,7 +21,7 @@ import org.elasticsearch.watcher.ResourceWatcherService
 
 class FlexibleSynonymsPlugin : Plugin(), AnalysisPlugin {
 
-    private val logger = Loggers.getLogger(FlexibleSynonymsPlugin::class.java, "eva")
+    private val logger = Loggers.getLogger(FlexibleSynonymsPlugin::class.java, "flexible-synonyms")
 
     private lateinit var watcher: ScheduledSynonymWatcher
 
