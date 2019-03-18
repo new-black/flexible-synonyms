@@ -9,8 +9,10 @@ import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.synonym.SolrSynonymParser
 import org.apache.lucene.analysis.synonym.SynonymMap
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser
-import org.elasticsearch.common.logging.ESLoggerFactory
-import java.net.URL
+import org.elasticsearch.SpecialPermission
+import org.elasticsearch.common.logging.Loggers
+import java.security.AccessController
+import java.security.PrivilegedAction
 
 interface SynonymResource {
     fun load(): SynonymMap
@@ -29,7 +31,7 @@ class WebSynonymResource(
         private val EMPTY_SYNONYM_MAP = SynonymMap.Builder().build()
     }
 
-    private val logger = ESLoggerFactory.getLogger(WebSynonymResource::class.java)
+    private val logger = Loggers.getLogger(WebSynonymResource::class.java, "flexible-synonyms")
 
     private var lastModified: String? = null
     private var eTags: String? = null
@@ -38,64 +40,77 @@ class WebSynonymResource(
         val request = HttpGet(location)
 
         createClient().use { client ->
-            client.execute(request).use {
-                logger.debug("response status for GET: {}", it.statusLine)
 
-                if (it.statusLine.statusCode == HttpStatus.SC_OK) {
-                    // Update last modified and etag for next request
-                    lastModified = it.getLastHeader(HttpHeaders.LAST_MODIFIED)?.value
-                    eTags = it.getLastHeader(HttpHeaders.ETAG)?.value
+            SpecialPermission.check()
+            return AccessController.doPrivileged<SynonymMap>( object : PrivilegedAction<SynonymMap> {
+                override fun run(): SynonymMap {
+                    client.execute(request).use {
+                        logger.debug("response status for GET: {}", it.statusLine)
 
-                    logger.debug("updating last modified with: {}", lastModified)
-                    logger.debug("updating etag with: {}", eTags)
+                        if (it.statusLine.statusCode == HttpStatus.SC_OK) {
+                            // Update last modified and etag for next request
+                            lastModified = it.getLastHeader(HttpHeaders.LAST_MODIFIED)?.value
+                            eTags = it.getLastHeader(HttpHeaders.ETAG)?.value
 
-                    if (it.entity.contentLength == 0L) {
+                            logger.debug("updating last modified with: {}", lastModified)
+                            logger.debug("updating etag with: {}", eTags)
+
+                            if (it.entity.contentLength == 0L) {
+                                return EMPTY_SYNONYM_MAP
+                            }
+
+                            val parser = createParser(format, expand, analyzer)
+                            parser.parse(it.entity.content.reader())
+                            return parser.build()
+                        }
+
                         return EMPTY_SYNONYM_MAP
                     }
-
-                    val parser = createParser(format, expand, analyzer)
-                    parser.parse(it.entity.content.reader())
-                    return parser.build()
                 }
-            }
+
+            })
         }
 
-        return EMPTY_SYNONYM_MAP
     }
 
     override fun needsReload(): Boolean {
-        logger.debug("checking if reload is required for: {}", location)
+        SpecialPermission.check()
+        return AccessController.doPrivileged<Boolean>( object : PrivilegedAction<Boolean> {
+            override fun run(): Boolean {
+                logger.debug("checking if reload is required for: {}", location)
 
-        val request = HttpHead(location)
-                .apply {
-                    lastModified?.let {
-                        setHeader(HttpHeaders.IF_MODIFIED_SINCE, it)
-                    }
-                    eTags?.let {
-                        setHeader(HttpHeaders.IF_NONE_MATCH, it)
+                val request = HttpHead(location)
+                        .apply {
+                            lastModified?.let {
+                                setHeader(HttpHeaders.IF_MODIFIED_SINCE, it)
+                            }
+                            eTags?.let {
+                                setHeader(HttpHeaders.IF_NONE_MATCH, it)
+                            }
+                        }
+
+                var reloadRequired = false
+
+                createClient().use { client ->
+                    client.execute(request).use {
+                        logger.debug("response status for HEAD: {}", it.statusLine)
+
+                        if (it.statusLine.statusCode == HttpStatus.SC_OK) {
+                            // Update last modified and etag for next request
+                            lastModified = it.getLastHeader(HttpHeaders.LAST_MODIFIED)?.value
+                            eTags = it.getLastHeader(HttpHeaders.ETAG)?.value
+
+                            logger.debug("updating last modified with: {}", lastModified)
+                            logger.debug("updating etag with: {}", eTags)
+
+                            reloadRequired = true
+                        }
                     }
                 }
 
-        var reloadRequired = false
-
-        createClient().use { client ->
-            client.execute(request).use {
-                logger.debug("response status for HEAD: {}", it.statusLine)
-
-                if (it.statusLine.statusCode == HttpStatus.SC_OK) {
-                    // Update last modified and etag for next request
-                    lastModified = it.getLastHeader(HttpHeaders.LAST_MODIFIED)?.value
-                    eTags = it.getLastHeader(HttpHeaders.ETAG)?.value
-
-                    logger.debug("updating last modified with: {}", lastModified)
-                    logger.debug("updating etag with: {}", eTags)
-
-                    reloadRequired = true
-                }
+                return reloadRequired
             }
-        }
-
-        return reloadRequired
+        })
     }
 
 }
