@@ -66,5 +66,5 @@ task distZip(type: Zip) {
     destinationDir = file("$buildDir/dist")
 
     from "$buildDir/elasticsearch"
-    into "elasticsearch"
+    into "/"
 }
