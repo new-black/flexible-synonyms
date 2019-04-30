@@ -25,7 +25,7 @@ class FlexibleSynonymTokenFilterFactory(
     // Invoked the first x times and then the instances are cached by Elastic
     override fun create(tokenStream: TokenStream): TokenStream {
         // Base url to the host where the synonyms reside
-        val baseUrl = URL(System.getenv("BASE_URL") ?: SYNONYM_BASE_URL.get(settings) ?: throw SettingsException("missing base url"))
+        val baseUrl = URL(System.getenv("SYNONYM_BASE_URL") ?: SYNONYM_BASE_URL.get(settings) ?: throw SettingsException("missing base url"))
         val uri = SYNONYM_URI.get(settings).ifBlank { throw SettingsException("setting ${SYNONYM_URI.key} is required") }
 
         val resource = synonymResourceFactory.create(URL(baseUrl, uri).toString(), SYNONYM_FORMAT.get(settings))
