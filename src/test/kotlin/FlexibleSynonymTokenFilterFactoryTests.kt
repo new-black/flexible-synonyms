@@ -45,7 +45,11 @@ class FlexibleSynonymTokenFilterFactoryTests {
 
     @Test(expected = SettingsException::class)
     fun shouldThrowWhenUriSettingIsMissing() {
-        createFactory(Settings.builder().build()).create(WhitespaceTokenizer())
+        createFactory(Settings
+                .builder()
+                .put(FlexibleSynonymTokenFilterFactory.SYNONYM_BASE_URL.key, "http://localhost")
+                .build()
+        ).create(WhitespaceTokenizer())
         kotlin.test.fail("expected exception to be thrown")
     }
 
@@ -67,6 +71,7 @@ class FlexibleSynonymTokenFilterFactoryTests {
 
         createFactory(
                 Settings.builder()
+                        .put(FlexibleSynonymTokenFilterFactory.SYNONYM_BASE_URL.key, "http://localhost")
                         .put(FlexibleSynonymTokenFilterFactory.SYNONYM_URI.key, "static-resource")
                         .build()
         )
