@@ -16,6 +16,7 @@ class DynamicSynonymFilterTests {
 
         try {
             val filter = DynamicSynonymFilter(tokenizer, SynonymMap.Builder().build())
+            filter.reset()
             filter.incrementToken()
         } catch (e: Throwable) {
             fail("Did not expect incrementToken to throw")
