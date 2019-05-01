@@ -47,5 +47,5 @@ class DynamicSynonymFilter(input: TokenStream, synonyms: SynonymMap) : TokenFilt
 }
 
 class NoopTokenFilter(input: TokenStream) : TokenFilter(input) {
-    override fun incrementToken() = false
+    override fun incrementToken() = input.incrementToken()
 }
