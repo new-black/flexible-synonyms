@@ -6,6 +6,7 @@ import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.settings.SettingsException
 import org.elasticsearch.index.IndexSettings
 import org.elasticsearch.index.analysis.AbstractTokenFilterFactory
+import java.net.URL
 
 class FlexibleSynonymTokenFilterFactory(
         indexSettings: IndexSettings,
