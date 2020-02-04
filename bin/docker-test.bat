@@ -4,4 +4,4 @@ docker run^
  -it^
  -v %cd%\..\build\elasticsearch:/usr/share/elasticsearch/plugins/flexible-synonyms^
  -v %cd%\elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml^
- elasticsearch:6.6.2
+ elasticsearch:6.8.4

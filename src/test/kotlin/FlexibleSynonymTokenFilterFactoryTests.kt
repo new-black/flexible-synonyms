@@ -29,7 +29,7 @@ class FlexibleSynonymTokenFilterFactoryTests {
                                         Settings.builder()
                                                 .put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 3)
                                                 .put(IndexMetaData.SETTING_NUMBER_OF_REPLICAS, 1)
-                                                .put(IndexMetaData.SETTING_VERSION_CREATED, Version.V_5_6_3_ID)
+                                                .put(IndexMetaData.SETTING_VERSION_CREATED, Version.V_6_8_4)
                                                 .build()
                                 )
                                 .build(),

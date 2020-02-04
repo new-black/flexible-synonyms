@@ -1,8 +1,8 @@
-version = '6.6.2'
+version = '6.8.4'
 
 buildscript {
     ext.kotlin_version = '1.3.0'
-    ext.elasticsearch_version = '6.6.2'
+    ext.elasticsearch_version = '6.8.4'
     ext.log4j_version = '2.9.1'
 
     repositories {
